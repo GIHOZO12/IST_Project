@@ -1,0 +1,43 @@
+export const API_BASE_URL = 'http://localhost:8000'
+
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+export interface RequestOptions {
+  method?: HttpMethod
+  body?: any
+  auth?: boolean
+}
+
+export async function apiRequest<T>(
+  path: string,
+  { method = 'GET', body, auth = false }: RequestOptions = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+
+  if (auth) {
+    const token = localStorage.getItem('access_token')
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+  }
+
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  const data = await res.json().catch(() => null)
+
+  if (!res.ok) {
+    const message =
+      typeof data === 'string'
+        ? data
+        : data?.detail || data?.message || 'Request failed'
+    throw new Error(message)
+  }
+
+  return data as T
+}
