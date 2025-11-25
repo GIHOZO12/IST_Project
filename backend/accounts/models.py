@@ -38,7 +38,7 @@ class CustomUser(AbstractUser):
         if self.is_approved:
             send_mail(
                 subject="Your account has been approved",
-                message=f"Hello {self.username}, your account has been approved. You can now login: https://procure-system.onrender.com/login",
+                message=f"Hello {self.username}, your account has been approved. You can now login: https://procuresystem.vercel.app/login",
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=[self.email],
                 fail_silently=False,
