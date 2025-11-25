@@ -100,22 +100,22 @@ import os
 
 # Fallback to SQLite if USE_SQLITE is set or if PostgreSQL is not available
 
-# DATABASES = {
-#         'default': dj_database_url.config(
-#             default=os.getenv("DATABASE_URL"),
-#             conn_max_age=600,
-#             ssl_require=True  
-#         )
-#     }
-
-
-DATABASES={
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-
+DATABASES = {
+        'default': dj_database_url.config(
+            default=os.getenv("DATABASE_URL"),
+            conn_max_age=600,
+            ssl_require=True  
+        )
     }
-}
+
+
+# DATABASES={
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+
+#     }
+# }
 
 
 # Password validation
@@ -180,8 +180,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER','gihozoismail98@gmail.com')
-EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD','psdg csou nugs ygof'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD'
  )
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
