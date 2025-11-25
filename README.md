@@ -69,7 +69,7 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
    python manage.py runserver
    ```
 
-   Backend will be available at `http://localhost:8000`
+   Backend will be available at `https://procure-system.onrender.com/`
 
 ### Frontend Setup
 
@@ -88,7 +88,7 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
    npm run dev
    ```
 
-   Frontend will be available at `http://localhost:5173`
+   Frontend will be available at `https://procuresystem.vercel.app`
 
 ### Docker Setup (Recommended)
 
@@ -114,7 +114,7 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
 ##  API Documentation
 
 Once the backend is running, access Swagger UI at:
-- **Swagger UI**: `http://localhost:8000/swagger/`
+- **Swagger UI**: `https://procure-system.onrender.com/swagger/`
 
 ### API Endpoints
 
@@ -179,8 +179,8 @@ The system uses AI/OCR for document processing:
    ```
 
 2. **Access the application:**
-   - Backend: `http://localhost:8000`
-   - Swagger: `http://localhost:8000/swagger/`
+   - Backend: `https://procure-system.onrender.com/`
+   - Swagger: `https://procure-system.onrender.com/swagger/`
 
 ### Production Deployment
 
