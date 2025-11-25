@@ -28,11 +28,8 @@ class  PurchaseRequest(models.Model):
 
     purchase_order=models.OneToOneField('PurchaseOrder', on_delete=models.SET_NULL, null=True, blank=True) 
 
-
-
-
-def __str__(self):
-    return f"{self.title} - {self.status}"
+    def __str__(self):
+        return f"{self.title} - {self.status}"
 
 
 
@@ -46,7 +43,7 @@ class RequestItem(models.Model):
 
 
 class Approval(models.Model):
-    LEVEL_CHOICES=[(1, 'Level 1'), (2, 'Level 2')]
+    LEVEL_CHOICES=[(1, 'Level 1'), (2, 'Level 2'),(3, 'finance')]
     purchase_request= models.ForeignKey(PurchaseRequest, on_delete=models.CASCADE, related_name="approvals")
     approver=models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="approver_made")
     level=models.IntegerField(choices=LEVEL_CHOICES)

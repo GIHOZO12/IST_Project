@@ -6,14 +6,17 @@ export interface RequestOptions {
   method?: HttpMethod
   body?: any
   auth?: boolean
+  isFormData?: boolean
 }
 
 export async function apiRequest<T>(
   path: string,
-  { method = 'GET', body, auth = false }: RequestOptions = {}
+  { method = 'GET', body, auth = false, isFormData = false }: RequestOptions = {}
 ): Promise<T> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+  const headers: Record<string, string> = {}
+
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json'
   }
 
   if (auth) {
@@ -26,12 +29,24 @@ export async function apiRequest<T>(
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers,
-    body: body ? JSON.stringify(body) : undefined,
+    body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
   })
 
   const data = await res.json().catch(() => null)
 
   if (!res.ok) {
+    
+    if (data && typeof data === 'object' && !data.detail && !data.message) {
+      const errorMessages = Object.entries(data)
+        .map(([key, value]: [string, any]) => {
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(', ')}`
+          }
+          return `${key}: ${JSON.stringify(value)}`
+        })
+        .join('; ')
+      throw new Error(errorMessages || 'Validation failed')
+    }
     const message =
       typeof data === 'string'
         ? data

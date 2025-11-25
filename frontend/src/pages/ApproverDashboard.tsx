@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { apiRequest } from '../api/client'
+import { apiRequest, API_BASE_URL } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 interface Approval {
@@ -17,6 +17,7 @@ interface PurchaseRequest {
   description: string
   amount: string
   status: string
+  proforma: string | null
   approvals?: Approval[]
 }
 
@@ -26,6 +27,33 @@ const ApproverDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending')
+
+  const handleFileDownload = async (url: string, filename: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file')
+      }
+      
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (err: any) {
+      setError(err.message || 'Failed to download file')
+    }
+  }
 
   const fetchRequests = async () => {
     try {
@@ -190,6 +218,18 @@ const ApproverDashboard: React.FC = () => {
                         <p className="font-medium text-slate-100">{r.title}</p>
                         <p className="text-slate-400 max-w-xs break-words">{r.description}</p>
                         <p className="text-emerald-400 font-semibold mt-1">${r.amount}</p>
+                        {r.proforma && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const filename = r.proforma?.split('/').pop() || 'proforma.pdf'
+                              handleFileDownload(`${API_BASE_URL}/api/v1/download/proforma/${r.id}/`, filename)
+                            }}
+                            className="mt-1 inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300"
+                          >
+                            📎 Download Proforma
+                          </button>
+                        )}
                       </div>
                       {activeTab === 'pending' && (
                         <div className="flex flex-col items-end gap-1 text-[11px]">

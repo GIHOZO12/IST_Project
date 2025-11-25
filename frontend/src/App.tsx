@@ -6,6 +6,7 @@ import StaffDashboard from './pages/StaffDashboard'
 import ApproverDashboard from './pages/ApproverDashboard'
 import FinanceDashboard from './pages/FinanceDashboard'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import Activate from './pages/Activate'
 
 type ProtectedRouteProps = {
   children: React.ReactElement
@@ -30,7 +31,7 @@ const DefaultRedirect: React.FC = () => {
   const { role } = useAuth()
 
   if (role === 'staff') return <Navigate to="/dashboard/staff" replace />
-  if (role === 'approver_level_1' || role === 'approver_level_2')
+  if (role === 'manager_1' || role === 'manager_2')
     return <Navigate to="/dashboard/approver" replace />
   if (role === 'finance') return <Navigate to="/dashboard/finance" replace />
 
@@ -42,6 +43,7 @@ const AppRoutes: React.FC = () => (
     <Route path="/" element={<DefaultRedirect />} />
     <Route path="/login" element={<LoginPage />} />
     <Route path="/register" element={<RegisterPage />} />
+    <Route path="/activate" element={<Activate />} />
 
     <Route
       path="/dashboard/staff"
@@ -55,7 +57,7 @@ const AppRoutes: React.FC = () => (
     <Route
       path="/dashboard/approver"
       element={
-        <ProtectedRoute allowedRoles={["approver_level_1", "approver_level_2"]}>
+        <ProtectedRoute allowedRoles={["manager_1", "manager_2"]}>
           <ApproverDashboard />
         </ProtectedRoute>
       }

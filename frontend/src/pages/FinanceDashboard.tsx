@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { apiRequest } from '../api/client'
+import { apiRequest, API_BASE_URL } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 interface Approval {
@@ -17,8 +17,21 @@ interface PurchaseRequest {
   description: string
   amount: string
   status: string
-  purchase_order: number | null
+  created_by: string
+  created_at: string
+  purchase_order: {
+    id: number
+    po_number: string
+    vendor: string
+    total_amount: string
+    po_file: string | null
+  } | null
   approvals?: Approval[]
+  items?: Array<{
+    description: string
+    quantity: number
+    unit_price: string
+  }>
 }
 
 const FinanceDashboard: React.FC = () => {
@@ -26,6 +39,33 @@ const FinanceDashboard: React.FC = () => {
   const [requests, setRequests] = useState<PurchaseRequest[]>([])
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending')
+
+  const handleFileDownload = async (url: string, filename: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file')
+      }
+      
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (err: any) {
+      setError(err.message || 'Failed to download file')
+    }
+  }
 
   const fetchRequests = async () => {
     try {
@@ -99,7 +139,7 @@ const FinanceDashboard: React.FC = () => {
               onClick={fetchRequests}
               className="text-xs px-2 py-1 rounded-md border border-slate-600 hover:border-emerald-500"
             >
-              Refresh
+              {/* Refresh */}
             </button>
           </div>
 
@@ -140,26 +180,72 @@ const FinanceDashboard: React.FC = () => {
                     key={r.id}
                     className="border border-slate-800 rounded-md px-3 py-2 flex items-center justify-between gap-3"
                   >
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-slate-100">{r.title}</p>
-                      <p className="text-slate-400 max-w-xs break-words">{r.description}</p>
-                      <p className="text-emerald-400 font-semibold mt-1">${r.amount}</p>
+                      <p className="text-slate-400 max-w-xs break-words text-[11px]">{r.description}</p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-emerald-400 font-semibold">${r.amount}</p>
+                        <p className="text-[10px] text-slate-500">Request #{r.id} by {r.created_by}</p>
+                        {r.items && r.items.length > 0 && (
+                          <p className="text-[10px] text-slate-500">{r.items.length} item(s)</p>
+                        )}
+                        {r.proforma && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const filename = r.proforma?.split('/').pop() || 'proforma.pdf'
+                              handleFileDownload(`${API_BASE_URL}/api/v1/download/proforma/${r.id}/`, filename)
+                            }}
+                            className="inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300 mt-1"
+                          >
+                            📎 Download Proforma
+                          </button>
+                        )}
+                      </div>
                       {r.approvals && r.approvals.length > 0 && (
-                        <ul className="mt-1 text-[10px] text-slate-400 space-y-0.5">
+                        <ul className="mt-2 text-[10px] text-slate-400 space-y-0.5">
                           {r.approvals
                             .filter((a) => a.approved)
                             .map((a) => (
                               <li key={a.id}>
-                                Level {a.level} approved by {a.approver}
+                                ✓ Level {a.level} approved by {a.approver}
                               </li>
                             ))}
                         </ul>
                       )}
                     </div>
                     {activeTab === 'approved' ? (
-                      <div className="text-right text-[10px] text-slate-400">
-                        <p className="uppercase tracking-wide">PO:</p>
-                        <p>{r.purchase_order ? `Generated (#${r.purchase_order})` : 'Not generated yet'}</p>
+                      <div className="text-right text-[10px] text-slate-400 space-y-2 min-w-[140px]">
+                        {r.purchase_order ? (
+                          <>
+                            <div>
+                              <p className="uppercase tracking-wide text-slate-500">PO Number:</p>
+                              <p className="text-emerald-400 font-semibold">{r.purchase_order.po_number}</p>
+                            </div>
+                            {r.purchase_order.vendor && (
+                              <div>
+                                <p className="text-slate-500">Vendor:</p>
+                                <p className="text-slate-300">{r.purchase_order.vendor}</p>
+                              </div>
+                            )}
+                            {r.purchase_order?.po_file && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleFileDownload(
+                                    `${API_BASE_URL}/api/v1/download/po/${r.purchase_order!.id}/`,
+                                    `PO-${r.purchase_order!.po_number}.pdf`
+                                  )
+                                }}
+                                className="mt-2 inline-flex items-center justify-center rounded-md bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 text-[10px] text-white font-medium"
+                              >
+                                📄 Download PO PDF
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <p className="text-slate-500">PO not generated</p>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">

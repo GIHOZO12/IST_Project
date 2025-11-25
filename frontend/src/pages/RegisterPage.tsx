@@ -25,7 +25,8 @@ const RegisterPage: React.FC = () => {
       })
 
       setSuccess('Account created successfully. You can now log in.')
-      setTimeout(() => navigate('/login'), 1000)
+      // setTimeout(() => navigate('/login'), 1000)
+      setTimeout(()=> navigate('/activate'),100)
     } catch (err: any) {
       setError(err.message || 'Unexpected error')
     } finally {
@@ -93,8 +94,8 @@ const RegisterPage: React.FC = () => {
               className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
             >
               <option value="staff">Staff</option>
-              <option value="approver_level_1">Approver Level 1</option>
-              <option value="approver_level_2">Approver Level 2</option>
+              <option value="manager_1">Manager 1</option>
+              <option value="manager_2"> Manager 2</option>
               <option value="finance">Finance</option>
             </select>
           </div>

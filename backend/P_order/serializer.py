@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from decimal import Decimal
+import json
 
 from .models import *
 
@@ -27,11 +28,43 @@ class ApprovalSerializer(serializers.ModelSerializer):
         read_only_fields = ["purchase_request", "approver", "created_at"]
 
 
+class PurchaseOrderSerializer(serializers.ModelSerializer):
+    po_file = serializers.SerializerMethodField()
+
+    class Meta:
+        model=PurchaseOrder
+        fields=["id","purchase_request", "po_number", "vendor", "item_snapshot", "total_amount", "created_at", "po_file"]
+    
+    def get_po_file(self, obj):
+        if obj.po_file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.po_file.url)
+            return obj.po_file.url
+        return None
+
+
 class PurchaseRequestSerialzer(serializers.ModelSerializer):
     items = RequestItemSerialzer(many=True)
     created_by = serializers.StringRelatedField(read_only=True)
-    # expose all approvals for this request (used by finance UI)
     approvals = ApprovalSerializer(many=True, read_only=True)
+    purchase_order = serializers.SerializerMethodField()
+    
+    def get_purchase_order(self, obj):
+        if obj.purchase_order:
+            return PurchaseOrderSerializer(obj.purchase_order, context=self.context).data
+        return None
+    
+    def to_representation(self, instance):
+        """Override to return full URL for proforma when reading"""
+        representation = super().to_representation(instance)
+        if instance.proforma:
+            request = self.context.get('request')
+            if request:
+                representation['proforma'] = request.build_absolute_uri(instance.proforma.url)
+            else:
+                representation['proforma'] = instance.proforma.url
+        return representation
 
     class Meta:
         model = PurchaseRequest
@@ -57,14 +90,34 @@ class PurchaseRequestSerialzer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "purchase_order",
-            "amount",  # auto-calculated from items
+            "amount",  
         ]
+
+    def to_internal_value(self, data):
+        # Handle FormData: parse JSON string for items if present
+        if hasattr(data, 'get'):
+            items_value = data.get('items')
+            if isinstance(items_value, str):
+                try:
+                    parsed_items = json.loads(items_value)
+                    # Create a mutable copy of the data
+                    if hasattr(data, '_mutable'):
+                        data._mutable = True
+                    data['items'] = parsed_items
+                except (json.JSONDecodeError, TypeError):
+                    pass  # Let serializer handle the error
+        return super().to_internal_value(data)
 
     def create(self, validated_data):
         items_data = validated_data.pop("items", [])
+        
+        # Handle JSON string from FormData
+        if isinstance(items_data, str):
+            try:
+                items_data = json.loads(items_data)
+            except json.JSONDecodeError:
+                items_data = []
 
-        # Calculate total amount from items (quantity * unit_price) and
-        # ignore any incoming amount value to keep it consistent.
         total_amount = sum(
             Decimal(item.get("quantity", 0)) * Decimal(item.get("unit_price", 0))
             for item in items_data
@@ -81,8 +134,14 @@ class PurchaseRequestSerialzer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         items_data = validated_data.pop("items", None)
+        
+        # Handle JSON string from FormData
+        if isinstance(items_data, str):
+            try:
+                items_data = json.loads(items_data)
+            except json.JSONDecodeError:
+                items_data = None
 
-        # If items are provided on update, recompute amount from them.
         if items_data is not None:
             total_amount = sum(
                 Decimal(item.get("quantity", 0)) * Decimal(item.get("unit_price", 0))
@@ -100,15 +159,6 @@ class PurchaseRequestSerialzer(serializers.ModelSerializer):
             for item_data in items_data:
                 RequestItem.objects.create(purchase_request=instance, **item_data)
         return instance
-
-
-
-
-class PurchaseOrderSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model=PurchaseOrder
-        fields=["id","purchase_request", "po_number", "vendor", "item_snapshot", "total_amount", "created_at", "po_file"]
 
 
 

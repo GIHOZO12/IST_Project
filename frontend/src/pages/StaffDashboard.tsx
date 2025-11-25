@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { apiRequest } from '../api/client'
+import { apiRequest, API_BASE_URL } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 interface PurchaseRequest {
@@ -9,6 +9,7 @@ interface PurchaseRequest {
   amount: string
   status: string
   created_at: string
+  proforma: string | null
 }
 
 interface RequestItem {
@@ -32,6 +33,8 @@ const StaffDashboard: React.FC = () => {
   const [items, setItems] = useState<RequestItem[]>([
     { description: '', quantity: 1, unit_price: 0 },
   ])
+  const [proformaFile, setProformaFile] = useState<File | null>(null)
+  const [uploadingReceipt, setUploadingReceipt] = useState<number | null>(null)
 
   const startEdit = (request: PurchaseRequest) => {
     if (request.status !== 'pending') return
@@ -100,27 +103,37 @@ const StaffDashboard: React.FC = () => {
       }))
 
       if (editingId) {
+        const formData = new FormData()
+        formData.append('title', title)
+        formData.append('description', description)
+        formData.append('amount', amount)
+        formData.append('items', JSON.stringify(payloadItems))
+        if (proformaFile) {
+          formData.append('proforma', proformaFile)
+        }
+
         await apiRequest(`/api/v1/update-purchase-request/${editingId}/`, {
           method: 'PUT',
           auth: true,
-          body: {
-            title,
-            description,
-            amount,
-            items: payloadItems,
-          },
+          body: formData,
+          isFormData: true,
         })
         setSuccess('Purchase request updated')
       } else {
+        const formData = new FormData()
+        formData.append('title', title)
+        formData.append('description', description)
+        formData.append('amount', amount)
+        formData.append('items', JSON.stringify(payloadItems))
+        if (proformaFile) {
+          formData.append('proforma', proformaFile)
+        }
+
         await apiRequest('/api/v1/purchase-request/', {
           method: 'POST',
           auth: true,
-          body: {
-            title,
-            description,
-            amount,
-            items: payloadItems,
-          },
+          body: formData,
+          isFormData: true,
         })
         setSuccess('Purchase request created')
       }
@@ -130,12 +143,77 @@ const StaffDashboard: React.FC = () => {
       setAmount('')
       setEditingId(null)
       setItems([{ description: '', quantity: 1, unit_price: 0 }])
+      setProformaFile(null)
       fetchRequests()
     } catch (err: any) {
       setError(err.message || 'Failed to create request')
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleFileDownload = async (url: string, filename: string) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file')
+      }
+      
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = downloadUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+    } catch (err: any) {
+      setError(err.message || 'Failed to download file')
+    }
+  }
+
+  const handleReceiptUpload = async (requestId: number) => {
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.pdf,.png,.jpg,.jpeg'
+    fileInput.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0]
+      if (!file) return
+
+      setUploadingReceipt(requestId)
+      setError(null)
+
+      try {
+        const formData = new FormData()
+        formData.append('receipt_file', file)
+
+        const response = await apiRequest(`/api/v1/submit-receipt/${requestId}/`, {
+          method: 'POST',
+          auth: true,
+          body: formData,
+          isFormData: true,
+        })
+
+        if (response.validation?.validated) {
+          setSuccess('Receipt submitted and validated successfully!')
+        } else {
+          setError(`Receipt submitted but has discrepancies: ${response.validation?.discrepancies?.map((d: any) => d.message).join(', ')}`)
+        }
+        fetchRequests()
+      } catch (err: any) {
+        setError(err.message || 'Failed to upload receipt')
+      } finally {
+        setUploadingReceipt(null)
+      }
+    }
+    fileInput.click()
   }
 
   return (
@@ -303,6 +381,19 @@ const StaffDashboard: React.FC = () => {
               />
             </div>
 
+            <div>
+              <label className="block text-slate-200 mb-1">Proforma Invoice (Optional)</label>
+              <input
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={(e) => setProformaFile(e.target.files?.[0] || null)}
+                className="w-full rounded-md bg-slate-900 border border-slate-700 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+              {proformaFile && (
+                <p className="text-[10px] text-slate-400 mt-1">Selected: {proformaFile.name}</p>
+              )}
+            </div>
+
             <button
               type="submit"
               disabled={loading}
@@ -335,24 +426,48 @@ const StaffDashboard: React.FC = () => {
                     key={r.id}
                     className="border border-slate-800 rounded-md px-3 py-2 flex items-center justify-between gap-3"
                   >
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium text-slate-100">{r.title}</p>
-                      <p className="text-slate-400 truncate max-w-xs">{r.description}</p>
+                      <p className="text-slate-400 truncate max-w-xs text-[11px]">{r.description}</p>
+                      {r.proforma && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const filename = r.proforma?.split('/').pop() || 'proforma.pdf'
+                            handleFileDownload(`${API_BASE_URL}/api/v1/download/proforma/${r.id}/`, filename)
+                          }}
+                          className="mt-1 inline-flex items-center text-[10px] text-blue-400 hover:text-blue-300"
+                        >
+                          📎 Download Proforma
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <p className="text-emerald-400 font-semibold">${r.amount}</p>
                         <p className="text-[10px] uppercase tracking-wide text-slate-400">{r.status}</p>
                       </div>
-                      {r.status === 'pending' && (
-                        <button
-                          type="button"
-                          onClick={() => startEdit(r)}
-                          className="text-[10px] px-2 py-1 rounded-md border border-slate-600 hover:border-emerald-500 hover:text-emerald-400"
-                        >
-                          Edit
-                        </button>
-                      )}
+                      <div className="flex flex-col gap-1">
+                        {r.status === 'pending' && (
+                          <button
+                            type="button"
+                            onClick={() => startEdit(r)}
+                            className="text-[10px] px-2 py-1 rounded-md border border-slate-600 hover:border-emerald-500 hover:text-emerald-400"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {r.status === 'approved' && (
+                          <button
+                            type="button"
+                            onClick={() => handleReceiptUpload(r.id)}
+                            disabled={uploadingReceipt === r.id}
+                            className="text-[10px] px-2 py-1 rounded-md border border-slate-600 hover:border-blue-500 hover:text-blue-400 disabled:opacity-50"
+                          >
+                            {uploadingReceipt === r.id ? 'Uploading...' : 'Upload Receipt'}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </li>
                 ))}

@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { apiRequest } from '../api/client'
 
-export type UserRole = 'staff' | 'approver_level_1' | 'approver_level_2' | 'finance' | null
+export type UserRole = 'staff' | 'manager_1' | 'manager_2' | 'finance' | null
 
 interface AuthState {
   username: string | null
@@ -27,25 +27,25 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const navigate = useNavigate()
-  const [state, setState] = useState<AuthState>({
-    username: null,
-    role: null,
-    accessToken: null,
-    refreshToken: null,
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
+  const [state, setState] = useState<AuthState>(() => {
     const accessToken = localStorage.getItem('access_token')
     const refreshToken = localStorage.getItem('refresh_token')
     const username = localStorage.getItem('username')
     const role = (localStorage.getItem('user_role') as UserRole) || null
 
     if (accessToken && username && role) {
-      setState({ accessToken, refreshToken, username, role })
+      return { accessToken, refreshToken, username, role }
     }
-  }, [])
+
+    return {
+      username: null,
+      role: null,
+      accessToken: null,
+      refreshToken: null,
+    }
+  })
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const login = async ({ username, password }: LoginPayload) => {
     setLoading(true)
@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (role === 'staff') {
         navigate('/dashboard/staff', { replace: true })
-      } else if (role === 'approver_level_1' || role === 'approver_level_2') {
+      } else if (role === 'manager_1' || role === 'manager_2') {
         navigate('/dashboard/approver', { replace: true })
       } else if (role === 'finance') {
         navigate('/dashboard/finance', { replace: true })

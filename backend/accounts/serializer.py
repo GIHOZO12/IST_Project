@@ -14,16 +14,17 @@ class RegisterSerializer(serializers.ModelSerializer):
             model=CustomUser
             fields=['username', 'email', 'password', 'role']
 
-
       def validate(self, data):
          username=data["username"]
+     
          email=data["email"]
-
+        
          if CustomUser.objects.filter(username=username).exists():
               raise serializers.ValidationError({"username":"Username is already in use."})
          if CustomUser.objects.filter(email=email).exists():
               raise serializers.ValidationError({"email":"Email is already in use."})
          
+       
 
 
          return data
@@ -60,6 +61,9 @@ class AuthenticateSerialiser(serializers.ModelSerializer):
           user = authenticate(username=username, password=password)
           if not user:
                raise serializers.ValidationError("Invalid credentials, try again")
+          # Block login if the account is not yet approved, except for superusers
+          if not user.is_superuser and not getattr(user, "is_approved", False):
+               raise serializers.ValidationError("Your account is awaiting approval by an administrator.")
           
           data["user"]=user
           return data 

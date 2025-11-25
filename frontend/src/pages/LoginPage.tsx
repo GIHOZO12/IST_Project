@@ -12,7 +12,8 @@ const LoginPage: React.FC = () => {
     try {
       await login({ username, password })
     } catch {
-      // error is already handled in context
+      console.error('Failed to login')
+      
     }
   }
 

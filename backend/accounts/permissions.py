@@ -10,8 +10,8 @@ class IsApprover(BasePermission):
     def has_permission(self, request, view):
 
         return request.user.is_authenticated and getattr(request.user, 'role', None) in [
-            'approver_level_1',
-            'approver_level_2',
+            'manager_1',
+            'manager_2',
             'finance',
         ]
 
