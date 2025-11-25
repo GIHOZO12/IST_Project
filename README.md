@@ -18,7 +18,7 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
 - Python 3.11+
 - Node.js 18+
 - Docker and Docker Compose (optional, for containerized deployment)
-- PostgreSQL (for production) or SQLite (for development)
+- PostgreSQL (for production)
 
 ##  Setup Instructions
 
@@ -45,14 +45,13 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
    ```env
    SECRET_KEY=your-secret-key-here
    DEBUG=True
-   DB_NAME=purchase_order_db
+   DB_NAME=procure
    DB_USER=postgres
    DB_PASSWORD=postgres
    DB_HOST=localhost
    DB_PORT=5432
-   USE_SQLITE=True  # Set to True for SQLite, False for PostgreSQL
    ALLOWED_HOSTS=localhost,127.0.0.1
-   OPENAI_API_KEY=your-openai-api-key  # Optional, for AI document processing
+   OPENAI_API_KEY=your-openai-api-key
    ```
 
 5. **Run migrations:**
@@ -155,7 +154,7 @@ Authorization: Bearer <your-access-token>
 5. **Staff** submits receipt after purchase
 6. System validates receipt against PO and flags discrepancies
 
-## 🤖 AI Document Processing
+##  AI Document Processing
 
 The system uses AI/OCR for document processing:
 
@@ -169,7 +168,7 @@ The system uses AI/OCR for document processing:
 - `pytesseract` - OCR for images
 - `openai` - AI-powered extraction (optional, requires API key)
 
-## 🐳 Deployment
+##  Deployment
 
 ### Using Docker
 
@@ -250,13 +249,13 @@ If you encounter Tesseract errors:
 ### Database Connection Issues
 - Ensure PostgreSQL is running (if using PostgreSQL)
 - Check database credentials in `.env` file
-- For SQLite, set `USE_SQLITE=True` in `.env`
+
 
 ### CORS Issues
 - Update `CORS_ALLOWED_ORIGINS` in `settings.py` with your frontend URL
 - Or set `CORS_ALLOW_ALL_ORIGINS=True` for development (not recommended for production)
 
-## 📦 Project Structure
+##  Project Structure
 
 ```
 IST_Project/
@@ -281,32 +280,29 @@ IST_Project/
 └── README.md
 ```
 
-## ✅ Assessment Criteria Checklist
+##  Assessment Criteria Checklist
 
-- [x] **Functionality (25 pts)**: All core features implemented
-- [x] **Code Quality (20 pts)**: Clean, maintainable code with proper structure
-- [x] **Security (15 pts)**: JWT authentication, role-based access control
-- [x] **Frontend (15 pts)**: React with TypeScript, role-based dashboards
-- [x] **Deployment & Docker (15 pts)**: Dockerfile and docker-compose.yml provided
-- [x] **Documentation (10 pts)**: Comprehensive README with setup instructions
+-  **Functionality (25 pts)**: All core features implemented
+- **Code Quality (20 pts)**: Clean, maintainable code with proper structure
+- **Security (15 pts)**: JWT authentication, role-based access control
+-  **Frontend (15 pts)**: React with TypeScript, role-based dashboards
+-  **Deployment & Docker (15 pts)**: Dockerfile and docker-compose.yml provided
+-  **Documentation (10 pts)**: Comprehensive README with setup instructions
 
-## 🔗 Public Deployment
+##  Public Deployment
 
 **Note**: Update this section with your actual deployment URL once deployed.
 
 - **Backend API**: [Your deployment URL]
-- **Frontend**: [Your frontend URL]
+- **Frontend**: https://procuresystem.vercel.app/
 - **Swagger UI**: [Your deployment URL]/swagger/
 
-## 👥 Contributors
+##  Contributors
 
 - GIHOZO - Full Stack Developer
 
-## 📄 License
+##  License
 
 This project is part of the IST Africa Technical Assessment.
 
----
-
-For any issues or questions, please contact the development team.
 

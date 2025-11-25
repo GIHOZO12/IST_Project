@@ -217,7 +217,7 @@ const StaffDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex">
+    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col md:flex-row">
       <aside className="w-56 border-r border-slate-800 bg-slate-950/80 p-4 hidden md:block">
         <h2 className="text-sm font-semibold text-slate-300 mb-4">Staff Menu</h2>
         <ul className="space-y-1 text-sm">
@@ -247,6 +247,31 @@ const StaffDashboard: React.FC = () => {
           </li>
         </ul>
       </aside>
+
+
+  
+<nav className="md:hidden border-b border-slate-800 bg-slate-950/80 px-4 py-2 flex gap-2">
+  <button
+    onClick={() => setActiveTab('new')}
+    className={`flex-1 text-xs px-3 py-2 rounded-md ${
+      activeTab === 'new'
+        ? 'bg-emerald-600 text-white'
+        : 'text-slate-300 border border-slate-700'
+    }`}
+  >
+    New Request
+  </button>
+  <button
+    onClick={() => setActiveTab('list')}
+    className={`flex-1 text-xs px-3 py-2 rounded-md ${
+      activeTab === 'list'
+        ? 'bg-emerald-600 text-white'
+        : 'text-slate-300 border border-slate-700'
+    }`}
+  >
+    My Requests
+  </button>
+</nav>
 
       <main className="flex-1 p-6">
         <header className="flex items-center justify-between mb-6">

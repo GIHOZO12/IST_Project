@@ -86,7 +86,7 @@ const FinanceDashboard: React.FC = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 flex">
+    <div className="min-h-screen bg-slate-950 text-slate-50 flex flex-col md:flex-row">
       <aside className="w-56 border-r border-slate-800 bg-slate-950/80 p-4 hidden md:block">
         <h2 className="text-sm font-semibold text-slate-300 mb-4">Finance Menu</h2>
         <ul className="space-y-1 text-sm">
@@ -117,6 +117,24 @@ const FinanceDashboard: React.FC = () => {
         </ul>
       </aside>
 
+
+
+
+<nav  className='md:hidden border-b  bg-slate-950/80 border-slate-800 px-4 py-2 flex gap-4'>
+
+
+
+<button className={`text-slate-300 hover:bg-slate-800 ${activeTab === 'pending' ? 'bg-emerald-600 text-white' : ''}`} onClick={() => setActiveTab('pending')}>Pending Approvals</button>
+
+
+<button className={`text-slate-300 hover:bg-slate-800 ${activeTab === 'approved' ? 'bg-emerald-600 text-white' : ''}`} onClick={() => setActiveTab('approved')}>Approved Requests</button>
+
+
+
+
+
+
+</nav>
       <main className="flex-1 p-6">
         <header className="flex items-center justify-between mb-6">
           <div>
