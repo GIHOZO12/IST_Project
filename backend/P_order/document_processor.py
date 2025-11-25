@@ -21,7 +21,7 @@ except Exception:
     Image = None
     TESSERACT_AVAILABLE = False
 try:
-    # Import openai dynamically to avoid static import errors when the package is not installed.
+
     openai_mod = importlib.import_module("openai")
     OpenAI = getattr(openai_mod, "OpenAI", None)
     OPENAI_AVAILABLE = OpenAI is not None
@@ -69,16 +69,19 @@ def extract_text_from_image(file: UploadedFile) -> str:
 
 def extract_text_from_file(file: UploadedFile) -> str:
     """Extract text from file (PDF or image)."""
-    content_type = file.content_type or ""
-    
-    if "pdf" in content_type.lower() or file.name.lower().endswith(".pdf"):
+
+    content_type = getattr(file, "content_type", "") or ""
+    name = getattr(file, "name", "") or ""
+
+
+    if "pdf" in content_type.lower() or name.lower().endswith(".pdf"):
         return extract_text_from_pdf(file)
     elif "image" in content_type.lower() or any(
-        file.name.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".gif"]
+        name.lower().endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".gif"]
     ):
         return extract_text_from_image(file)
     else:
-        
+    
         text = extract_text_from_pdf(file)
         if not text:
             text = extract_text_from_image(file)
@@ -100,8 +103,8 @@ def extract_proforma_data(file: UploadedFile) -> Dict[str, Any]:
             "terms": "",
             "raw_text": "",
         }
-    
-    # Use AI if available for better extraction
+
+    ai_result: Dict[str, Any] = {}
     if OPENAI_AVAILABLE:
         try:
             client = OpenAI()
@@ -118,45 +121,68 @@ Return JSON with: vendor (company name), items (array of {{description, quantity
                 ],
                 temperature=0.1,
             )
-            result = json.loads(response.choices[0].message.content)
-            result["raw_text"] = text[:500]  # Store first 500 chars
-            return result
+            ai_result = json.loads(response.choices[0].message.content)
         except Exception:
-            pass
+            ai_result = {}
+
+  
+    vendor = ai_result.get("vendor", "") if isinstance(ai_result, dict) else ""
+    items = ai_result.get("items", []) if isinstance(ai_result, dict) else []
+    total_amount = float(ai_result.get("total_amount", 0.0)) if isinstance(ai_result, dict) else 0.0
+    terms = ai_result.get("terms", "") if isinstance(ai_result, dict) else ""
+
     
-    # Fallback: Basic regex extraction
-    vendor = ""
-    items = []
-    total_amount = 0.0
-    terms = ""
+    if not vendor:
+  
+        vendor_match = re.search(r"(?:vendor|supplier|company|from)\s*[:\-]\s*([^\n\r]+)", text, re.IGNORECASE)
+        if vendor_match:
+            vendor = vendor_match.group(1).strip()
+        else:
+
+            for line in text.splitlines():
+                if re.search(r"vendor", line, re.IGNORECASE):
+                    parts = line.split(":", 1)
+                    if len(parts) == 2:
+                        candidate = parts[1].strip()
+                        if candidate:
+                            vendor = candidate
+                            break
+
+ 
+    if not vendor:
+        for line in text.splitlines():
+            cleaned = line.strip()
+            if not cleaned:
+                continue
     
-    # Extract vendor (look for company name patterns)
-    vendor_match = re.search(r"(?:vendor|supplier|company|from):\s*([A-Z][A-Za-z\s&]+)", text, re.IGNORECASE)
-    if vendor_match:
-        vendor = vendor_match.group(1).strip()
-    
-    # Extract total amount
-    total_matches = re.findall(r"(?:total|amount|sum):\s*\$?(\d+[.,]?\d*)", text, re.IGNORECASE)
-    if total_matches:
-        try:
-            total_amount = float(total_matches[-1].replace(",", ""))
-        except ValueError:
-            pass
-    
-    # Extract items (basic pattern matching)
-    # Look for quantity x description @ price patterns
-    item_pattern = r"(\d+)\s*x?\s*([A-Za-z\s]+?)\s*(?:@|at)?\s*\$?(\d+[.,]?\d*)"
-    item_matches = re.findall(item_pattern, text, re.IGNORECASE)
-    for match in item_matches[:10]:  # Limit to 10 items
-        try:
-            items.append({
-                "description": match[1].strip(),
-                "quantity": int(match[0]),
-                "unit_price": float(match[2].replace(",", "")),
-            })
-        except ValueError:
-            continue
-    
+            if re.search(r"proforma|invoice|quotation|quote", cleaned, re.IGNORECASE):
+                continue
+            vendor = cleaned
+            break
+
+
+    if not total_amount:
+        total_matches = re.findall(r"(?:total|amount|sum):\s*\$?(\d+[.,]?\d*)", text, re.IGNORECASE)
+        if total_matches:
+            try:
+                total_amount = float(total_matches[-1].replace(",", ""))
+            except ValueError:
+                total_amount = 0.0
+
+    if not items:
+      
+        item_pattern = r"(\d+)\s*x?\s*([A-Za-z\s]+?)\s*(?:@|at)?\s*\$?(\d+[.,]?\d*)"
+        item_matches = re.findall(item_pattern, text, re.IGNORECASE)
+        for match in item_matches[:10]:
+            try:
+                items.append({
+                    "description": match[1].strip(),
+                    "quantity": int(match[0]),
+                    "unit_price": float(match[2].replace(",", "")),
+                })
+            except ValueError:
+                continue
+
     return {
         "vendor": vendor or "Unknown Vendor",
         "items": items,
@@ -181,7 +207,7 @@ def extract_receipt_data(file: UploadedFile) -> Dict[str, Any]:
             "raw_text": "",
         }
     
-    # Use AI if available
+  
     if OPENAI_AVAILABLE:
         try:
             client = OpenAI()
@@ -204,17 +230,16 @@ Return JSON with: seller (store/vendor name), items (array of {{description, qua
         except Exception:
             pass
     
-    # Fallback: Basic regex extraction
+
     seller = ""
     items = []
     total_amount = 0.0
     
-    # Extract seller
+  
     seller_match = re.search(r"(?:seller|store|vendor|from):\s*([A-Z][A-Za-z\s&]+)", text, re.IGNORECASE)
     if seller_match:
         seller = seller_match.group(1).strip()
-    
-    # Extract total
+
     total_matches = re.findall(r"(?:total|amount|sum):\s*\$?(\d+[.,]?\d*)", text, re.IGNORECASE)
     if total_matches:
         try:
@@ -222,7 +247,7 @@ Return JSON with: seller (store/vendor name), items (array of {{description, qua
         except ValueError:
             pass
     
-    # Extract items
+
     item_pattern = r"(\d+)\s*x?\s*([A-Za-z\s]+?)\s*(?:@|at)?\s*\$?(\d+[.,]?\d*)"
     item_matches = re.findall(item_pattern, text, re.IGNORECASE)
     for match in item_matches[:10]:
@@ -250,8 +275,7 @@ def validate_receipt_against_po(receipt_data: Dict[str, Any], po_data: Dict[str,
     """
     discrepancies = []
     validated = True
-    
-    # Check seller/vendor match
+  
     receipt_seller = receipt_data.get("seller", "").lower()
     po_vendor = po_data.get("vendor", "").lower()
     if receipt_seller and po_vendor and receipt_seller not in po_vendor and po_vendor not in receipt_seller:
@@ -261,11 +285,11 @@ def validate_receipt_against_po(receipt_data: Dict[str, Any], po_data: Dict[str,
         })
         validated = False
     
-    # Check total amount (allow 5% tolerance)
+ 
     receipt_total = receipt_data.get("total_amount", 0.0)
     po_total = float(po_data.get("total_amount", 0.0))
     if receipt_total > 0 and po_total > 0:
-        tolerance = po_total * 0.05  # 5% tolerance
+        tolerance = po_total * 0.05  
         if abs(receipt_total - po_total) > tolerance:
             discrepancies.append({
                 "type": "amount_mismatch",
@@ -275,7 +299,7 @@ def validate_receipt_against_po(receipt_data: Dict[str, Any], po_data: Dict[str,
             })
             validated = False
     
-    # Check items (basic comparison)
+
     receipt_items = receipt_data.get("items", [])
     po_items = po_data.get("item_snapshot", [])
     
@@ -286,7 +310,7 @@ def validate_receipt_against_po(receipt_data: Dict[str, Any], po_data: Dict[str,
         })
         validated = False
     
-    # Compare individual items (simplified - just check if descriptions match)
+
     if receipt_items and po_items:
         receipt_descriptions = [item.get("description", "").lower() for item in receipt_items]
         po_descriptions = [item.get("description", "").lower() for item in po_items]

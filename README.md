@@ -2,7 +2,7 @@
 
 A mini "Procure-to-Pay" system built with Django REST Framework and React, featuring multi-level approval workflows, document processing (AI-based), and receipt validation.
 
-## 🚀 Features
+##  Features
 
 - **Multi-level Approval Workflow**: Staff → Approver Level 1 → Approver Level 2 → Finance
 - **Document Processing**: AI-powered extraction from proforma invoices and receipts
@@ -20,7 +20,7 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
 - Docker and Docker Compose (optional, for containerized deployment)
 - PostgreSQL (for production) or SQLite (for development)
 
-## 🛠️ Setup Instructions
+##  Setup Instructions
 
 ### Backend Setup
 
@@ -112,7 +112,7 @@ A mini "Procure-to-Pay" system built with Django REST Framework and React, featu
 3. **For frontend with Docker (optional):**
    Create a `Dockerfile` in the frontend directory and use docker-compose to orchestrate both services.
 
-## 📚 API Documentation
+##  API Documentation
 
 Once the backend is running, access Swagger UI at:
 - **Swagger UI**: `http://localhost:8000/swagger/`
@@ -139,14 +139,14 @@ All API endpoints (except register/login) require JWT authentication. Include th
 Authorization: Bearer <your-access-token>
 ```
 
-## 🎯 User Roles
+##  User Roles
 
 1. **Staff**: Can create, view, and update their own purchase requests; submit receipts
-2. **Approver Level 1**: Can approve/reject requests at first level
-3. **Approver Level 2**: Can approve/reject requests at second level
+2. **Approver manager 1**: Can approve/reject requests at first level
+3. **Approver manager 2**: Can approve/reject requests at second level
 4. **Finance**: Can approve requests (final approval) and generate Purchase Orders
 
-## 🔄 Workflow
+##  Workflow
 
 1. **Staff** creates a purchase request with items and optional proforma invoice
 2. **Approver Level 1** reviews and approves/rejects
@@ -209,7 +209,7 @@ DB_PORT=5432
 USE_SQLITE=False
 ```
 
-## 📝 Testing
+##  Testing
 
 ### Create Test Users
 
@@ -226,12 +226,12 @@ You can create users via Django admin or API:
 
 2. **Approver Level 1:**
    ```python
-   CustomUser.objects.create_user(username='approver1', password='password123', role='approver_level_1')
+   CustomUser.objects.create_user(username='manager_1', password='password123', role='manager_1')
    ```
 
 3. **Approver Level 2:**
    ```python
-   CustomUser.objects.create_user(username='approver2', password='password123', role='approver_level_2')
+   CustomUser.objects.create_user(username='manager_2', password='password123', role='manager_2')
    ```
 
 4. **Finance:**
@@ -239,7 +239,7 @@ You can create users via Django admin or API:
    CustomUser.objects.create_user(username='finance1', password='password123', role='finance')
    ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Tesseract OCR Issues
 If you encounter Tesseract errors:

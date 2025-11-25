@@ -121,7 +121,7 @@ class UpdatePurchaseRequestView(APIView):
         if purchase.status !='pending':
             return Response({"error":f"you can not update request because it is already {purchase.status}."}, status=status.HTTP_400_BAD_REQUEST)
         
-        # Handle FormData: parse items JSON string if present
+    
     
         data = {}
         for key in request.data.keys():
@@ -181,9 +181,7 @@ class ApproveRequestView(APIView):
 
         comments = request.data.get("comments", "")
 
-        # Only create an Approval row for actual approver levels (1 and 2).
-        # The finance step is handled separately and should not use an
-        # invalid level value that is not present in LEVEL_CHOICES.
+   
         if level in (1, 2):
             Approval.objects.create(
                 purchase_request=purchase,
@@ -197,12 +195,12 @@ class ApproveRequestView(APIView):
                     message=f"Your Purchase Request '{purchase.title}' has been approved at {role}.",
                     staff_email=purchase.created_by.email
             )
-        # Recompute which levels have already approved (1 and 2).
+    
         approved_levels = list(
             purchase.approvals.filter(approved=True).values_list("level", flat=True)
         )
 
-        # Finance (level 3) may only approve/generate PO after level 1 and 2.
+    
         if level == 3:
             if 1 in approved_levels and 2 in approved_levels:
                 return self.generate_po(purchase, request.user)
@@ -218,14 +216,12 @@ class ApproveRequestView(APIView):
 
     def generate_po(self, purchase, approver):
 
-        # Mark the request as fully approved by finance.
         purchase.status = "approved"
         purchase.approved_by = approver
         purchase.save()
 
         po_number = f"PO-{purchase.id}-{purchase.created_at.strftime('%Y%m%d')}"
 
-        # Build a JSON-serializable snapshot of the items.
         items_snapshot = [
             {
                 "description": item.description,
@@ -237,19 +233,25 @@ class ApproveRequestView(APIView):
 
         total_amount = sum(i["quantity"] * i["unit_price"] for i in items_snapshot)
 
-        # Extract vendor from proforma if available
         vendor_name = "Vendor Name"
         if purchase.proforma:
             try:
                 purchase.proforma.seek(0)
                 proforma_data = extract_proforma_data(purchase.proforma)
-                if proforma_data.get('vendor'):
-                    vendor_name = proforma_data['vendor']
-            except Exception:
+
+            
+                print("PROFORMA_DATA:", proforma_data)
+
+                vendor_value = proforma_data.get('vendor')
+                print("PROFORMA VENDOR VALUE:", vendor_value)
+
+                if vendor_value:
+                    vendor_name = vendor_value
+            except Exception as e:
+                print("ERROR IN extract_proforma_data:", e)
                 pass
 
-        # Create the PurchaseOrder and link it back to the PurchaseRequest so
-        # the frontend can see that a PO has been generated.
+
         po = PurchaseOrder.objects.create(
             purchase_request=purchase,
             po_number=po_number,
@@ -258,8 +260,7 @@ class ApproveRequestView(APIView):
             total_amount=total_amount,
         )
 
-        # Generate a professional PDF Purchase Order document
-        # This uses the reportlab library for PDF generation
+      
         buffer = BytesIO()
         c = canvas.Canvas(buffer, pagesize=A4)
         width, height = A4
@@ -295,17 +296,16 @@ class ApproveRequestView(APIView):
         c.drawString(50, y_position - 30, "Procurement Department")
         c.drawString(50, y_position - 45, "Email: procurement@ist.africa")
         
-        # Right Column - Vendor Info
+       
         c.setFont("Helvetica-Bold", 11)
         c.drawString(300, y_position, "TO:")
         c.setFont("Helvetica", 10)
         vendor_lines = vendor_name.split('\n') if '\n' in vendor_name else [vendor_name]
-        for i, line in enumerate(vendor_lines[:4]):  # Limit to 4 lines
+        for i, line in enumerate(vendor_lines[:4]): 
             c.drawString(300, y_position - 15 - (i * 15), line[:50])
         
         y_position -= 80
-        
-        # ===== REQUEST DETAILS SECTION =====
+   
         c.setFillColorRGB(light_gray_r, light_gray_g, light_gray_b)
         c.rect(50, y_position - 20, width - 100, 50, fill=1, stroke=0)
         c.setFillColorRGB(0, 0, 0)
@@ -389,7 +389,7 @@ class ApproveRequestView(APIView):
         c.drawString(480, y_position, "$0.00")
         y_position -= 20
         
-        # Grand Total
+       
         c.setFillColorRGB(dark_blue_r, dark_blue_g, dark_blue_b)
         c.rect(380, y_position - 20, width - 430, 25, fill=1, stroke=0)
         c.setFillColorRGB(1, 1, 1)
@@ -399,7 +399,7 @@ class ApproveRequestView(APIView):
         
         y_position -= 50
         
-        # ===== TERMS & CONDITIONS =====
+       
         c.setFillColorRGB(0, 0, 0)
         c.setFont("Helvetica-Bold", 10)
         c.drawString(50, y_position, "TERMS AND CONDITIONS:")
@@ -417,8 +417,7 @@ class ApproveRequestView(APIView):
         
         y_position -= 20
         
-        # ===== APPROVAL SECTION =====
-        # Approval signature line
+     
         c.setFont("Helvetica-Bold", 9)
         c.drawString(50, y_position, "APPROVED BY:")
         y_position -= 20
@@ -427,16 +426,16 @@ class ApproveRequestView(APIView):
         c.drawString(50, y_position - 12, f"Finance Department")
         c.drawString(50, y_position - 24, f"Date: {purchase.updated_at.strftime('%B %d, %Y')}")
         
-        # Signature line
+
         c.setLineWidth(0.5)
         c.line(50, y_position - 35, 200, y_position - 35)
         c.setFont("Helvetica", 7)
         c.drawString(50, y_position - 42, "Authorized Signature")
         
-        # Footer
+
         c.setFont("Helvetica", 7)
         c.setFillColorRGB(0.5, 0.5, 0.5)
-        # ReportLab uses British spelling: drawCentredString
+    
         c.drawCentredString(width / 2, 30, "This is a computer-generated document. No signature required.")
         c.drawCentredString(width / 2, 20, f"Generated on {purchase.updated_at.strftime('%Y-%m-%d %H:%M:%S')}")
 
@@ -474,8 +473,7 @@ class RejectRequestView(APIView):
     permission_classes=[IsAuthenticated, IsApprover]
     def patch(self, request, id):
         try:
-            # Use a normal get() here; select_for_update() requires an explicit
-            # transaction and was causing TransactionManagementError.
+       
             purchase=PurchaseRequest.objects.get(id=id)
         except PurchaseRequest.DoesNotExist:
             return Response({"error":"Purchase Request not found."}, status=status.HTTP_404_NOT_FOUND)
@@ -549,10 +547,10 @@ class SubmitReceiptView(APIView):
             "total_amount": float(po.total_amount),
         }
         
-        # Validate receipt against PO
+ 
         validation_result = validate_receipt_against_po(receipt_data, po_data)
         
-        # Create receipt record
+    
         receipt = Receipt.objects.create(
             purchase_request=purchase,
             uploaded_by=request.user,
