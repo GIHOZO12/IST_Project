@@ -19,7 +19,7 @@ const RegisterPage: React.FC = () => {
     setLoading(true)
 
     try {
-      const data = await apiRequest<any>('/accounts/register/', {
+      await apiRequest<{ message?: string }>('/accounts/register/', {
         method: 'POST',
         body: { username, email, password, role },
       })
@@ -27,8 +27,8 @@ const RegisterPage: React.FC = () => {
       setSuccess('Account created successfully. You can now log in.')
       // setTimeout(() => navigate('/login'), 1000)
       setTimeout(()=> navigate('/activate'),100)
-    } catch (err: any) {
-      setError(err.message || 'Unexpected error')
+    } catch (err: unknown) {
+      setError(err instanceof Error?err.message : 'Unexpected error')
     } finally {
       setLoading(false)
     }

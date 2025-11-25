@@ -50,9 +50,9 @@ const StaffDashboard: React.FC = () => {
       const copy = [...prev]
       if (field === 'quantity' || field === 'unit_price') {
         // basic number parsing; fallback to 0
-        ;(copy[index] as any)[field] = value === '' ? 0 : Number(value)
+        copy[index] = { ...copy[index], [field]: value === '' ? 0 : Number(value) }
       } else {
-        ;(copy[index] as any)[field] = value
+        copy[index] = { ...copy[index], [field]: value }
       }
       return copy
     })
@@ -80,8 +80,8 @@ const StaffDashboard: React.FC = () => {
         auth: true,
       })
       setRequests(data)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load requests')
+    } catch (err: unknown) {
+      setError(err instanceof Error?err.message : 'Failed to load requests')
     }
   }
 
@@ -145,8 +145,8 @@ const StaffDashboard: React.FC = () => {
       setItems([{ description: '', quantity: 1, unit_price: 0 }])
       setProformaFile(null)
       fetchRequests()
-    } catch (err: any) {
-      setError(err.message || 'Failed to create request')
+    } catch (err: unknown) {
+      setError(err instanceof Error?err.message : 'Failed to create request')
     } finally {
       setLoading(false)
     }
@@ -174,8 +174,8 @@ const StaffDashboard: React.FC = () => {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(downloadUrl)
-    } catch (err: any) {
-      setError(err.message || 'Failed to download file')
+    } catch (err: unknown) {
+      setError(err instanceof Error?err.message : 'Failed to download file')
     }
   }
 
@@ -199,7 +199,7 @@ const StaffDashboard: React.FC = () => {
           auth: true,
           body: formData,
           isFormData: true,
-        })
+        }) as { validation?: { validated?: boolean, discrepancies?: { message: string }[] } }
 
         if (response.validation?.validated) {
           setSuccess('Receipt submitted and validated successfully!')
@@ -207,8 +207,8 @@ const StaffDashboard: React.FC = () => {
           setError(`Receipt submitted but has discrepancies: ${response.validation?.discrepancies?.map((d: any) => d.message).join(', ')}`)
         }
         fetchRequests()
-      } catch (err: any) {
-        setError(err.message || 'Failed to upload receipt')
+      } catch (err: unknown) {
+        setError(err instanceof Error?err.message : 'Failed to upload receipt')
       } finally {
         setUploadingReceipt(null)
       }

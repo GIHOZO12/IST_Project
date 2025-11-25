@@ -32,6 +32,7 @@ interface PurchaseRequest {
     quantity: number
     unit_price: string
   }>
+  proforma?: string
 }
 
 const FinanceDashboard: React.FC = () => {
@@ -62,8 +63,8 @@ const FinanceDashboard: React.FC = () => {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(downloadUrl)
-    } catch (err: any) {
-      setError(err.message || 'Failed to download file')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to download file')
     }
   }
 
@@ -75,8 +76,8 @@ const FinanceDashboard: React.FC = () => {
         auth: true,
       })
       setRequests(data)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load requests')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load requests')
     }
   }
 
@@ -263,8 +264,8 @@ const FinanceDashboard: React.FC = () => {
                                 body: { comments: comment },
                               })
                               fetchRequests()
-                            } catch (err: any) {
-                              setError(err.message || 'Approval failed')
+                            } catch (err: unknown) {
+                              setError(err instanceof Error ? err.message : 'Approval failed')
                             }
                           }}
                           className="text-xs px-3 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white"

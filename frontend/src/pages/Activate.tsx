@@ -1,4 +1,4 @@
-import React from 'react'
+// import React from 'react'
 
 const Activate = () => {
   return (
@@ -11,5 +11,4 @@ const Activate = () => {
     </div>
   )
 }
-
 export default Activate

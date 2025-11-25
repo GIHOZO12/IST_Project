@@ -50,8 +50,8 @@ const ApproverDashboard: React.FC = () => {
       link.click()
       document.body.removeChild(link)
       window.URL.revokeObjectURL(downloadUrl)
-    } catch (err: any) {
-      setError(err.message || 'Failed to download file')
+    } catch (err: unknown) {
+      setError(err instanceof Error ?err.message : 'Failed to download file');
     }
   }
 
@@ -63,8 +63,8 @@ const ApproverDashboard: React.FC = () => {
         auth: true,
       })
       setRequests(data)
-    } catch (err: any) {
-      setError(err.message || 'Failed to load requests')
+    } catch (err: unknown) {
+      setError(err  instanceof Error?err.message : 'Failed to load requests')
     }
   }
 
@@ -88,8 +88,8 @@ const ApproverDashboard: React.FC = () => {
         },
       })
       fetchRequests()
-    } catch (err: any) {
-      setError(err.message || 'Action failed')
+    } catch (err: unknown) {
+      setError(err instanceof Error?err.message : 'Action failed')
     } finally {
       setLoading(false)
     }
