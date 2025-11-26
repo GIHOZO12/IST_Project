@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://procure-system.onrender.com'
+export const API_BASE_URL = 'https://procure-system.onrender.com/'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
