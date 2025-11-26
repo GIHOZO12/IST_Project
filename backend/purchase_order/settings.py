@@ -82,15 +82,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'purchase_order.wsgi.application'
 
 
-CORS_ALLOWED_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True  
 
 CORS_ALLOWED_ORIGINS = [
- "https://procuresystem.vercel.app",
+    "https://procuresystem.vercel.app",
     "http://localhost:5173",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://procure-system.onrender.com"
+    "https://procure-system.onrender.com",
 ]
+
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
